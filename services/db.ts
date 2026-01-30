@@ -1,5 +1,5 @@
 
-import Dexie, { Table } from 'dexie';
+import { Dexie, Table } from 'dexie';
 import { Animal, Tutor, Appointment, SOAPRecord, Transaction, InventoryItem, User, Tenant } from '../types';
 
 // Definição estendida para suportar controle de sincronização
@@ -10,6 +10,7 @@ export interface SyncMetadata {
 
 export type Local<T> = T & SyncMetadata;
 
+// Fix: Use named import for Dexie class to ensure correct inheritance and visibility of base methods in the type system
 class PetInfoDatabase extends Dexie {
   tenants!: Table<Local<Tenant>>;
   users!: Table<Local<User>>;
@@ -23,6 +24,7 @@ class PetInfoDatabase extends Dexie {
   constructor() {
     super('PetInfoCareDB');
     
+    // Fix: Properly inherited 'version' method from Dexie class
     // Definição dos índices (Primary Key e índices de busca)
     this.version(1).stores({
       tenants: 'id, syncStatus',

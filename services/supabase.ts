@@ -1,9 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Tenta pegar as variáveis de ambiente. 
-// Se não existirem (modo dev local sem config), o cliente será nulo.
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+// Tenta pegar as variáveis de ambiente de forma segura.
+const getEnv = () => {
+  try {
+    // @ts-ignore
+    return (import.meta && import.meta.env) ? import.meta.env : {};
+  } catch (e) {
+    return {};
+  }
+};
+
+const env = getEnv();
+const supabaseUrl = env.VITE_SUPABASE_URL;
+const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = (supabaseUrl && supabaseAnonKey) 
   ? createClient(supabaseUrl, supabaseAnonKey) 
@@ -14,6 +23,11 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
  */
 export const checkConnection = async () => {
     if (!supabase) return false;
-    const { error } = await supabase.from('tenants').select('count', { count: 'exact', head: true });
-    return !error;
+    try {
+      const { error } = await supabase.from('tenants').select('count', { count: 'exact', head: true });
+      return !error;
+    } catch (e) {
+      console.warn("Supabase connection check failed:", e);
+      return false;
+    }
 };
