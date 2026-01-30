@@ -1,0 +1,7 @@
+{
+  "name": "Pet InfoCare - Gestão Veterinária Popular",
+  "description": "Sistema ERP de gestão veterinária popular, focado em alta rotatividade, eficiência operacional, multi-tenancy e acessibilidade.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

@@ -1,0 +1,41 @@
+
+version: '3.8'
+
+services:
+  # Aplicação Frontend (Pet InfoCare)
+  app:
+    build: .
+    container_name: pet-infocare-frontend
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_INSTANCE_NAME=Pet InfoCare (Docker Local)
+      - VITE_ENABLE_GOOGLE_AI=false
+    depends_on:
+      - db
+    networks:
+      - pet-network
+
+  # Banco de Dados (PostgreSQL) - Simulação de Backend
+  db:
+    image: postgres:15-alpine
+    container_name: pet-infocare-db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: securepassword123
+      POSTGRES_DB: pet_infocare
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pet-network
+
+volumes:
+  postgres_data:
+
+networks:
+  pet-network:
+    driver: bridge
