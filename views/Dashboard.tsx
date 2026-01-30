@@ -5,7 +5,7 @@ import { AppointStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
-  const { appointments, transactions, isFeatureLocked, currentUser } = useApp();
+  const { appointments, transactions, vacinas, isFeatureLocked, currentUser } = useApp();
   const navigate = useNavigate();
 
   // Dados Operacionais (Sempre Visíveis)
@@ -17,7 +17,16 @@ const Dashboard: React.FC = () => {
     .filter(t => t.type === 'INCOME' && t.status === 'PENDING')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  // Paywall Component (Visualmente mais leve)
+  // Alertas de Vacinas para o Dashboard (Vencidas + Próximas 7 dias)
+  const alertVacinasCount = vacinas.filter(v => {
+    if (v.status === 'DONE') return false;
+    const date = new Date(v.dataPrevista);
+    const limit = new Date();
+    limit.setDate(limit.getDate() + 7);
+    return date <= limit;
+  }).length;
+
+  // Paywall Component
   const AnalyticsLock = () => (
     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-center p-6 rounded-[2.5rem]">
       <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
@@ -33,18 +42,16 @@ const Dashboard: React.FC = () => {
   return (
     <div className="p-8 md:p-10 bg-slate-50 min-h-screen space-y-8 animate-in fade-in duration-500">
       
-      {/* Header Saudação - Mais quente e pessoal */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight mb-2">
-            Olá, Dr(a). {currentUser.name.split(' ')[1]}! 🐶🐱
+            Olá, Dr(a). {currentUser?.name?.split(' ')[1] || 'Vet'}! 🐶🐱
           </h1>
           <p className="text-slate-500 font-medium">
-            Vamos cuidar dos peludos hoje? Aqui está o resumo do dia.
+            Resumo clínico e operacional da sua unidade.
           </p>
         </div>
         
-        {/* Atalhos Rápidos Coloridos */}
         <div className="flex space-x-3">
            <button onClick={() => navigate('/agenda')} className="p-4 bg-teal-100 text-teal-700 rounded-2xl hover:bg-teal-200 transition-colors flex items-center shadow-sm">
               <i className="fas fa-calendar-plus text-xl"></i>
@@ -55,13 +62,10 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Coluna 1 & 2: Operacional */}
         <div className="lg:col-span-2 space-y-8">
           
-          {/* Cards de Métricas Visualmente Ricos */}
           <div className="grid grid-cols-2 gap-6">
              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-[2.5rem] shadow-lg text-white relative overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform" onClick={() => navigate('/agenda')}>
                 <div className="relative z-10">
@@ -84,12 +88,11 @@ const Dashboard: React.FC = () => {
                    </div>
                    <span className="bg-teal-50 text-teal-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">Receber</span>
                 </div>
-                <h3 className="text-4xl font-black text-slate-800 mb-1">R$ {pendingIncome}</h3>
+                <h3 className="text-4xl font-black text-slate-800 mb-1">R$ {pendingIncome.toLocaleString()}</h3>
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Aberto (Fiado/Boleto)</p>
              </div>
           </div>
 
-          {/* Agenda Visual */}
           <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8">
              <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-black text-slate-800">Próximos Atendimentos</h3>
@@ -125,9 +128,29 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Coluna 3: Campanhas e Analytics */}
         <div className="space-y-8">
            
+           {/* Widget de Alerta de Vacinas */}
+           <div 
+            onClick={() => navigate('/vacinas')}
+            className={`p-8 rounded-[2.5rem] border cursor-pointer transition-all ${alertVacinasCount > 0 ? 'bg-rose-50 border-rose-100 hover:bg-rose-100' : 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100'}`}
+           >
+               <div className="flex justify-between items-start mb-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${alertVacinasCount > 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                      <i className="fas fa-syringe"></i>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${alertVacinasCount > 0 ? 'bg-rose-200 text-rose-700' : 'bg-emerald-200 text-emerald-700'}`}>
+                    Prevenção
+                  </span>
+               </div>
+               <h3 className={`text-xl font-black mb-1 ${alertVacinasCount > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
+                 {alertVacinasCount > 0 ? `${alertVacinasCount} Alertas de Vacina` : 'Imunização em Dia'}
+               </h3>
+               <p className={`text-xs font-medium ${alertVacinasCount > 0 ? 'text-rose-600/80' : 'text-emerald-600/80'}`}>
+                 {alertVacinasCount > 0 ? 'Vacinas vencidas ou próximas do vencimento.' : 'Nenhum paciente com reforço atrasado.'}
+               </p>
+           </div>
+
            {/* Campanhas Sociais */}
            <div className="bg-orange-50 p-8 rounded-[2.5rem] border border-orange-100 relative overflow-hidden">
                <h3 className="text-lg font-black text-orange-800 mb-4 relative z-10">Campanha Social</h3>
@@ -154,7 +177,6 @@ const Dashboard: React.FC = () => {
                <i className="fas fa-heart absolute -bottom-6 -right-6 text-9xl text-orange-200/50 rotate-12"></i>
            </div>
 
-           {/* Analytics Teaser */}
            <div className="relative bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden min-h-[300px]">
               {isFeatureLocked('ANALYTICS') && <AnalyticsLock />}
               

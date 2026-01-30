@@ -65,10 +65,20 @@ const MENU_STRUCTURE: MenuItem[] = [
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, logout, lastSaved } = useApp();
+  const { currentUser, logout, lastSaved, vacinas } = useApp();
   const [openGroups, setOpenGroups] = useState<string[]>(['Atendimento', 'Internação']);
   const [storageData, setStorageData] = useState({ used: 0, max: 1073741824, percentage: 0 });
   const [isBackingUp, setIsBackingUp] = useState(false);
+
+  // Cálculo de Notificações de Vacina (Vencidas + Próximas 7 dias)
+  const vaccineAlerts = vacinas ? vacinas.filter(v => {
+    if (v.status === 'DONE') return false;
+    const date = new Date(v.dataPrevista);
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+    return date <= nextWeek;
+  }).length : 0;
 
   useEffect(() => {
     const fetchStorage = async () => {
@@ -148,6 +158,13 @@ const Sidebar: React.FC = () => {
                         }
                       >
                          <span className="text-[13px]">{subItem.label}</span>
+                         
+                         {/* Badge de Vacinas */}
+                         {subItem.label === 'Vacinas' && vaccineAlerts > 0 && (
+                            <span className="ml-auto bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-sm animate-pulse">
+                                {vaccineAlerts}
+                            </span>
+                         )}
                       </NavLink>
                     ))}
                   </div>

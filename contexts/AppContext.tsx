@@ -2,9 +2,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   Animal, Appointment, Tutor, Transaction, SOAPRecord, InventoryItem, 
-  Tenant, PlanoType, User, UserRole, AppointStatus
+  Tenant, PlanoType, User, UserRole, AppointStatus, VacinaRecord
 } from '../types';
-import { MOCK_ANIMAIS, MOCK_TUTORES, MOCK_AGENDA, MOCK_TRANSACAOS, MOCK_ESTOQUE, MOCK_USER } from '../constants';
+import { MOCK_ANIMAIS, MOCK_TUTORES, MOCK_AGENDA, MOCK_TRANSACAOS, MOCK_ESTOQUE, MOCK_USER, MOCK_VACINAS } from '../constants';
 import { db, saveToLocal } from '../services/db';
 import { syncService } from '../services/syncService';
 import { checkConnection } from '../services/supabase';
@@ -19,6 +19,7 @@ interface AppState {
   transactions: Transaction[];
   medicalRecords: SOAPRecord[];
   inventory: InventoryItem[];
+  vacinas: VacinaRecord[];
   lastSaved: Date | null;
   isOnline: boolean;
 }
@@ -30,6 +31,8 @@ interface AppContextType extends AppState {
   updateAppointmentStatus: (id: string, status: AppointStatus) => void;
   saveMedicalRecord: (record: Omit<SOAPRecord, 'id' | 'date'>) => Promise<void>;
   addTransaction: (tx: Omit<Transaction, 'id'>) => void;
+  addVacina: (vac: Omit<VacinaRecord, 'id'>) => Promise<void>;
+  updateVacina: (vac: VacinaRecord) => Promise<void>;
   isFeatureLocked: (feature: 'ANALYTICS' | 'MULTI_USER') => boolean;
   forceSave: () => void;
 }
@@ -47,48 +50,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  // Estados reativos (Carregados do Dexie)
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<SOAPRecord[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [vacinas, setVacinas] = useState<VacinaRecord[]>([]);
   
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  // --- 1. INICIALIZAÇÃO E SYNC ---
   useEffect(() => {
     const init = async () => {
-      // Carrega dados do Dexie para a Memória (React State)
-      // Se estiver vazio (primeiro uso), popula com MOCKs
-      
       const count = await db.animals.count();
       if (count === 0) {
-        console.log("Populando banco local com dados iniciais...");
         await db.tutors.bulkAdd(MOCK_TUTORES.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
         await db.animals.bulkAdd(MOCK_ANIMAIS.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
         await db.appointments.bulkAdd(MOCK_AGENDA.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
         await db.inventory.bulkAdd(MOCK_ESTOQUE.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
         await db.transactions.bulkAdd(MOCK_TRANSACAOS.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
+        await db.vacinas.bulkAdd(MOCK_VACINAS.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
       }
-
       refreshStateFromDb();
       
-      // Inicia Sync Engine se houver conexão com Supabase
       const hasSupabase = await checkConnection();
       if (hasSupabase) {
         setIsOnline(true);
-        // Start Auto Sync (Pull & Push)
         const stopSync = syncService.startAutoSync(tenant.id);
         return stopSync;
       }
     };
-
     init();
 
-    // Listeners de rede
     window.addEventListener('online', () => setIsOnline(true));
     window.addEventListener('offline', () => setIsOnline(false));
   }, []);
@@ -100,9 +94,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTransactions(await db.transactions.toArray());
     setMedicalRecords(await db.medicalRecords.toArray());
     setInventory(await db.inventory.toArray());
+    setVacinas(await db.vacinas.toArray());
   };
-
-  // --- ACTIONS (Escrevem no Dexie e Atualizam Estado) ---
 
   const login = (email: string, pass: string) => {
     if (email && pass) {
@@ -144,7 +137,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           date: new Date().toISOString()
         };
         await saveToLocal(db.medicalRecords, newRecord, 'created');
-        
         if (record.appointmentId) {
           updateAppointmentStatus(record.appointmentId, AppointStatus.FINISHED);
         }
@@ -152,13 +144,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLastSaved(new Date());
     } catch (error) {
         console.error("Falha crítica ao salvar registro médico:", error);
-        throw error; // Re-throw para a UI lidar
+        throw error;
     }
   };
 
   const addTransaction = async (tx: Omit<Transaction, 'id'>) => {
     const newTx = { ...tx, id: generateUUID() };
     await saveToLocal(db.transactions, newTx, 'created');
+    refreshStateFromDb();
+  };
+
+  const addVacina = async (vac: Omit<VacinaRecord, 'id'>) => {
+    const newVac = { ...vac, id: generateUUID() };
+    await saveToLocal(db.vacinas, newVac, 'created');
+    refreshStateFromDb();
+  };
+
+  const updateVacina = async (vac: VacinaRecord) => {
+    await saveToLocal(db.vacinas, vac, 'updated');
     refreshStateFromDb();
   };
 
@@ -170,9 +173,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      tenant, currentUser, tutors, animals, appointments, transactions, medicalRecords, inventory, lastSaved, isOnline,
-      login, logout, addAppointment, updateAppointmentStatus, saveMedicalRecord, addTransaction, isFeatureLocked, 
-      forceSave: () => syncService.pushChanges() // Manual force sync
+      tenant, currentUser, tutors, animals, appointments, transactions, medicalRecords, inventory, vacinas, lastSaved, isOnline,
+      login, logout, addAppointment, updateAppointmentStatus, saveMedicalRecord, addTransaction, addVacina, updateVacina, isFeatureLocked, 
+      forceSave: () => syncService.pushChanges()
     }}>
       {children}
     </AppContext.Provider>
