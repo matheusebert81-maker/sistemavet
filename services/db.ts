@@ -1,6 +1,6 @@
 
-import { Dexie, Table } from 'dexie';
-import { Animal, Tutor, Appointment, SOAPRecord, Transaction, InventoryItem, User, Tenant, VacinaRecord } from '../types';
+import Dexie, { Table } from 'dexie';
+import { Animal, Tutor, Appointment, SOAPRecord, Transaction, InventoryItem, User, Tenant, VacinaRecord, Comanda, WorkflowItem } from '../types';
 
 // Definição estendida para suportar controle de sincronização
 export interface SyncMetadata {
@@ -20,11 +20,13 @@ class PetInfoDatabase extends Dexie {
   inventory!: Table<Local<InventoryItem>>;
   transactions!: Table<Local<Transaction>>;
   vacinas!: Table<Local<VacinaRecord>>;
+  comandas!: Table<Local<Comanda>>;
+  workflowItems!: Table<Local<WorkflowItem>>;
 
   constructor() {
     super('PetInfoCareDB');
     
-    this.version(2).stores({
+    this.version(3).stores({
       tenants: 'id, syncStatus',
       users: 'id, email, syncStatus',
       tutors: 'id, nome, cpf, syncStatus',
@@ -33,7 +35,9 @@ class PetInfoDatabase extends Dexie {
       medicalRecords: 'id, animalId, date, syncStatus',
       inventory: 'id, nome, category, syncStatus',
       transactions: 'id, date, type, syncStatus',
-      vacinas: 'id, animalId, status, syncStatus'
+      vacinas: 'id, animalId, status, syncStatus',
+      comandas: 'id, numero, status, syncStatus',
+      workflowItems: 'id, currentStage, syncStatus'
     });
   }
 }

@@ -1,150 +1,131 @@
 
-import React, { useState } from 'react';
-import { MOCK_ESTOQUE, MOCK_USER } from '../constants.tsx';
-import { EstoqueCategoria, LogAction } from '../types';
-import { logAction } from '../services/logService';
+import React, { useState, useMemo } from 'react';
+import { useApp } from '../contexts/AppContext';
+import { InventoryItem } from '../types';
 
-// Estoque: Corrigida a nomenclatura de propriedades como unidadeId e adicionada tipagem explícita para strings de enum
+const StatsCard: React.FC<{ icon: string; label: string; value: string | number; color: string; }> = ({ icon, label, value, color }) => (
+  <div className={`bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group hover:border-${color}-200 transition-all`}>
+    <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full bg-${color}-50 group-hover:scale-150 transition-transform duration-500 opacity-50`}></div>
+    <div className="relative z-10">
+      <div className={`w-12 h-12 rounded-2xl bg-${color}-100 text-${color}-600 flex items-center justify-center text-2xl mb-4`}>
+        <i className={`fas ${icon}`}></i>
+      </div>
+      <p className="text-3xl font-black text-slate-800">{value}</p>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+    </div>
+  </div>
+);
 
-const Estoque: React.FC = () => {
-  const [items, setItems] = useState(MOCK_ESTOQUE);
-  const [filter, setFilter] = useState<EstoqueCategoria | 'TODOS'>('TODOS');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredItems = items.filter(item => {
-    const matchesFilter = filter === 'TODOS' || item.categoria === filter;
-    const matchesSearch = item.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          item.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
-
-  const getStatusInfo = (item: typeof MOCK_ESTOQUE[0]) => {
-    const today = new Date();
-    const expiry = new Date(item.validade);
-    const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (expiry < today) return { label: 'VENCIDO', color: 'bg-rose-100 text-rose-700 border-rose-200' };
-    if (item.quantidade <= item.minimo) return { label: 'CRÍTICO', color: 'bg-rose-100 text-rose-700 border-rose-200' };
-    if (diffDays <= 30) return { label: 'EXPIRA LOGO', color: 'bg-amber-100 text-amber-700 border-amber-200' };
-    return { label: 'OK', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
-  };
-
-  const handleAdjustStock = (id: string, amount: number, reason: string) => {
-    const item = items.find(i => i.id === id);
-    if (!item) return;
-
-    logAction(
-      MOCK_USER.unidadeId,
-      MOCK_USER.id,
-      LogAction.UPDATE,
-      "StockAdjustment",
-      id,
-      { old: item.quantidade, new: item.quantidade + amount, reason }
-    );
-
-    setItems(prev => prev.map(i => i.id === id ? { ...i, quantidade: i.quantidade + amount } : i));
-    alert(`Estoque de ${item.nome} ajustado em ${amount} unidades.`);
+const ProdutoCard: React.FC<{ item: InventoryItem; onClick: () => void }> = ({ item, onClick }) => {
+  const stockStatus = item.quantity <= 0 ? 'empty' : item.quantity <= item.minQuantity ? 'low' : 'ok';
+  
+  const statusStyles = {
+    ok: { border: 'border-transparent', bg: 'bg-white' },
+    low: { border: 'border-amber-300', bg: 'bg-amber-50/50' },
+    empty: { border: 'border-rose-300', bg: 'bg-rose-50/50' },
   };
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500">
-      <header className="flex justify-between items-center">
+    <div 
+      onClick={onClick}
+      className={`p-6 rounded-3xl border shadow-sm hover:shadow-xl hover:shadow-indigo-50 hover:-translate-y-1 transition-all cursor-pointer group ${statusStyles[stockStatus].border} ${statusStyles[stockStatus].bg}`}
+    >
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Gestão de Estoque</h2>
-          <p className="text-slate-500 font-medium">Controle de insumos, medicamentos e validade (Unidade Centro).</p>
+          <h3 className="font-black text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">{item.nome}</h3>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.categoria}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xl font-black text-indigo-600">R$ {item.valorVenda.toFixed(2)}</p>
+        </div>
+      </div>
+      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl mt-4 text-xs">
+        <div className="font-bold text-slate-500">
+          SKU: <span className="font-mono">{item.sku}</span>
+        </div>
+        <div className={`font-black px-2 py-1 rounded-md text-[10px] ${
+            stockStatus === 'empty' ? 'bg-rose-100 text-rose-600' :
+            stockStatus === 'low' ? 'bg-amber-100 text-amber-600' :
+            'bg-emerald-100 text-emerald-600'
+        }`}>
+          {item.quantidade} em estoque
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Estoque: React.FC = () => {
+  const { inventory } = useApp();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const stats = useMemo(() => {
+    const totalValue = inventory.reduce((sum, item) => sum + (item.costPrice || 0) * (item.quantity || 0), 0);
+    const lowStock = inventory.filter(p => p.quantity > 0 && p.quantity <= p.minQuantity).length;
+    const outOfStock = inventory.filter(p => p.quantity <= 0).length;
+    return { totalValue, lowStock, outOfStock };
+  }, [inventory]);
+  
+  const filteredItems = useMemo(() => 
+    inventory.filter(item => 
+      item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [inventory, searchTerm]);
+
+  return (
+    <div className="p-8 space-y-8 animate-in fade-in duration-500">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Produtos & Estoque</h2>
+          <p className="text-slate-500 font-medium">Gerenciamento de inventário, serviços e insumos.</p>
         </div>
         <div className="flex space-x-3">
-          <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center">
-             <i className="fas fa-file-import mr-2"></i> Importar
-          </button>
-          <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">
-            <i className="fas fa-plus mr-2"></i> Novo Item
+           <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all flex items-center text-xs uppercase tracking-widest">
+            <i className="fas fa-plus mr-2"></i> Novo Produto
           </button>
         </div>
       </header>
-
-      <div className="flex space-x-4 items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-        <div className="relative flex-1">
-          <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-          <input 
-            type="text" 
-            placeholder="Buscar por SKU ou Nome..." 
-            className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <select 
-          className="bg-slate-50 border-none rounded-2xl px-6 py-3 text-xs font-black uppercase outline-none"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as any)}
-        >
-          <option value="TODOS">Todas Categorias</option>
-          {Object.values(EstoqueCategoria).map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard icon="fa-boxes-stacked" label="Itens no Catálogo" value={inventory.length} color="indigo" />
+        <StatsCard icon="fa-dollar-sign" label="Valor em Estoque (Custo)" value={`R$ ${stats.totalValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} color="emerald" />
+        <StatsCard icon="fa-triangle-exclamation" label="Estoque Baixo" value={stats.lowStock} color="amber" />
+        <StatsCard icon="fa-box-open" label="Fora de Estoque" value={stats.outOfStock} color="rose" />
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-100">
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">SKU</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Produto</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoria</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Qtd</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Validade</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {filteredItems.map(item => {
-              const status = getStatusInfo(item);
-              return (
-                <tr key={item.id} className="group hover:bg-slate-50/50 transition-colors">
-                  <td className="px-8 py-6 text-xs font-black text-slate-400">{item.sku}</td>
-                  <td className="px-8 py-6">
-                    <p className="font-bold text-slate-900">{item.nome}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">Custo: R$ {item.valorCusto.toFixed(2)}</p>
-                  </td>
-                  <td className="px-8 py-6">
-                    <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase">{item.categoria}</span>
-                  </td>
-                  <td className="px-8 py-6 text-center">
-                    <div className="flex flex-col items-center">
-                      <span className="font-black text-slate-900">{item.quantidade} {item.unidadeMedida}</span>
-                      <span className="text-[9px] text-slate-400 font-bold">Min: {item.minimo}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 text-sm font-medium text-slate-500">{new Date(item.validade).toLocaleDateString()}</td>
-                  <td className="px-8 py-6">
-                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black border ${status.color}`}>
-                      {status.label}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <div className="flex justify-end space-x-2">
-                       <button 
-                         onClick={() => handleAdjustStock(item.id, 1, 'Ajuste manual')}
-                         className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all"
-                       >
-                         <i className="fas fa-plus text-[10px]"></i>
-                       </button>
-                       <button 
-                         onClick={() => handleAdjustStock(item.id, -1, 'Ajuste manual')}
-                         className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all"
-                       >
-                         <i className="fas fa-minus text-[10px]"></i>
-                       </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      {/* Search and Filter */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="relative">
+          <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+          <input 
+            type="text"
+            placeholder="Buscar por nome, SKU ou categoria..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+        </div>
+      </div>
+      
+      {/* Product Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {filteredItems.length > 0 ? (
+          filteredItems.map(item => (
+            <ProdutoCard 
+              key={item.id} 
+              item={item} 
+              onClick={() => alert(`Detalhes para ${item.nome}`)}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-20 bg-white rounded-3xl border border-slate-100">
+            <i className="fas fa-box-open text-6xl text-slate-200 mb-4"></i>
+            <p className="font-bold text-slate-500">Nenhum produto encontrado</p>
+            <p className="text-xs text-slate-400">Tente ajustar sua busca ou adicione um novo produto.</p>
+          </div>
+        )}
       </div>
     </div>
   );

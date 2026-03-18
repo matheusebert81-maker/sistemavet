@@ -13,7 +13,8 @@ const Login: React.FC = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (matricula && email && password) {
-        const success = login(email, password);
+        // Passando matrícula para validar acesso admin (01)
+        const success = login(email, password, matricula);
         if (success) {
             navigate('/dashboard');
         } else {

@@ -192,7 +192,7 @@ const RegisterClinic: React.FC = () => {
                        {/* Indicador de Força */}
                       {formData.password && (
                         <div className="mt-2">
-                          <div className="flex space-x-1 h-1">
+                          <div className="flex space-x-1 h-1.5">
                             {[1, 2, 3, 4].map((step) => (
                               <div 
                                 key={step} 

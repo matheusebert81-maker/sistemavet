@@ -1,27 +1,15 @@
+import base44 from "@base44/vite-plugin"
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
 
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-// https://vitejs.dev/config/
+// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    emptyOutDir: true,
-    sourcemap: false,
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@fortawesome/fontawesome-free']
-        }
-      }
-    }
-  },
-  server: {
-    port: 3000,
-    host: true
-  }
+  plugins: [
+    base44({
+      // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
+      // can be removed if the code has been updated to use the new SDK imports from @base44/sdk
+      legacySDKImports: process.env.BASE44_LEGACY_SDK_IMPORTS === 'true'
+    }),
+    react(),
+  ]
 });

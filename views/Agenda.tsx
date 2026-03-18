@@ -1,26 +1,22 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_AGENDA, MOCK_ANIMAIS, MOCK_TUTORES } from '../constants.tsx';
-import { Appointment, AppointStatus } from '../types';
-
-// Agenda: Nomes ajustados de animalId e tutorId para corresponder à convenção camelCase em types.ts
+import { useApp } from '../contexts/AppContext';
+import { AppointStatus } from '../types';
 
 const Agenda: React.FC = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>(MOCK_AGENDA);
+  const { appointments, animals, tutors, updateAppointmentStatus } = useApp();
   const navigate = useNavigate();
 
   const handleStateTransition = (id: string, nextStatus: AppointStatus) => {
-    setAppointments(prev => prev.map(item => 
-      item.id === id ? { ...item, status: nextStatus } : item
-    ));
+    const item = appointments.find(i => i.id === id);
+    if (!item) return;
+
+    updateAppointmentStatus(id, nextStatus);
     
     if (nextStatus === AppointStatus.IN_PROGRESS) {
-      const item = appointments.find(i => i.id === id);
-      if (item) {
-        // Lógica Vibe: Check-in na Agenda -> Status "Em atendimento" -> Abre Prontuário
-        navigate(`/prontuario?animalId=${item.animalId}&appointmentId=${id}`);
-      }
+      // Lógica Vibe: Check-in na Agenda -> Status "Em atendimento" -> Abre Workstation
+      navigate(`/workstation?animalId=${item.animalId}&appointmentId=${id}`);
     }
   };
 
@@ -62,8 +58,8 @@ const Agenda: React.FC = () => {
         
         <div className="divide-y divide-slate-50">
           {appointments.map((item) => {
-            const animal = MOCK_ANIMAIS.find(a => a.id === item.animalId);
-            const tutor = MOCK_TUTORES.find(t => t.id === item.tutorId);
+            const animal = animals.find(a => a.id === item.animalId);
+            const tutor = tutors.find(t => t.id === item.tutorId);
             const hora = new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             return (
@@ -72,11 +68,11 @@ const Agenda: React.FC = () => {
                 <div className="col-span-3">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center font-bold text-indigo-600">
-                       {animal?.nome[0]}
+                       {animal?.nome[0] || '?'}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{animal?.nome}</p>
-                      <p className="text-xs text-slate-400 font-medium">{tutor?.nome}</p>
+                      <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{animal?.nome || 'Não encontrado'}</p>
+                      <p className="text-xs text-slate-400 font-medium">{tutor?.nome || 'Não encontrado'}</p>
                     </div>
                   </div>
                 </div>
@@ -107,7 +103,7 @@ const Agenda: React.FC = () => {
                   )}
                   {item.status === AppointStatus.IN_PROGRESS && (
                     <button 
-                      onClick={() => navigate(`/prontuario?animalId=${item.animalId}&appointmentId=${item.id}`)}
+                      onClick={() => navigate(`/workstation?animalId=${item.animalId}&appointmentId=${item.id}`)}
                       className="px-4 py-2 bg-amber-500 text-white rounded-xl font-bold text-[11px] hover:bg-amber-600 transition-all shadow-md shadow-amber-100"
                     >
                       REASSUMIR

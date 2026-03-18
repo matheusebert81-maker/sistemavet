@@ -11,7 +11,7 @@ declare global {
 
 // Carrega variáveis de ambiente injetadas pelo Docker ou Vite
 // @ts-ignore
-const env = window._env_ || (import.meta && import.meta.env) ? import.meta.env : {};
+const env: any = window._env_ || ((import.meta && import.meta.env) ? import.meta.env : {});
 
 // Converte string "true"/"false" para booleano
 const toBool = (val: string | boolean | undefined) => {

@@ -107,7 +107,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 ) : (
                   todaysAppointments.slice(0, 5).map(apt => (
-                    <div key={apt.id} className="flex items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-teal-200 hover:bg-teal-50/30 transition-all cursor-pointer" onClick={() => navigate(`/prontuario?animalId=${apt.animalId}&appointmentId=${apt.id}`)}>
+                    <div key={apt.id} className="flex items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-teal-200 hover:bg-teal-50/30 transition-all cursor-pointer" onClick={() => navigate(`/workstation?animalId=${apt.animalId}&appointmentId=${apt.id}`)}>
                        <div className="w-16 text-center border-r border-slate-200 pr-4 mr-4">
                           <p className="text-lg font-black text-slate-700">{new Date(apt.startTime).getHours()}:{new Date(apt.startTime).getMinutes().toString().padStart(2, '0')}</p>
                        </div>

@@ -3,7 +3,7 @@ import {
   UserRole, Tenant, Unidade, User, Tutor, Animal, Appointment, AppointStatus, 
   InventoryItem, Transaction, BedStatus, EstoqueCategoria, PlanoType, WorkflowStage, 
   WorkflowItem, VacinaRecord, Bed, Internamento, SurgeryQueueItem, 
-  TenantStatus
+  TenantStatus, Comanda
 } from './types';
 
 export const MOCK_TENANT: Tenant = {
@@ -42,7 +42,7 @@ export const MOCK_TUTORES: Tutor[] = [
 ];
 
 export const MOCK_ANIMAIS: Animal[] = [
-  { id: 'ani-1', tutorId: 'tut-1', matricula: 'PET-001', nome: 'Thor', especie: 'Canina', raca: 'SRD (Vira-lata)', peso: 15.5, pesoAtual: 15.5, idade: '5 anos', sexo: 'M', fotoUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400', temperamento: 'Dócil' },
+  { id: 'ani-1', tutorId: 'tut-1', matricula: 'PET-001', nome: 'Thor', especie: 'Canina', raca: 'SRD (Vira-lata)', peso: 15.5, pesoAtual: 15.5, idade: '5 anos', sexo: 'M', fotoUrl: 'https://images.unsplash.com/photo-1543466835-00a79o7e9de1?w=400', temperamento: 'Dócil' },
   { id: 'ani-2', tutorId: 'tut-2', matricula: 'PET-002', nome: 'Luna', especie: 'Felina', raca: 'Siamês', peso: 3.2, pesoAtual: 3.2, idade: '2 anos', sexo: 'F', fotoUrl: 'https://images.unsplash.com/photo-1513245543132-31f507417b26?w=400', temperamento: 'Arisco' },
   { id: 'ani-3', tutorId: 'tut-3', matricula: 'PET-003', nome: 'Paçoca', especie: 'Canina', raca: 'Poodle', peso: 6.0, pesoAtual: 6.0, idade: '10 anos', sexo: 'M', fotoUrl: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=400', temperamento: 'Idoso' },
   { id: 'ani-4', tutorId: 'tut-1', matricula: 'PET-004', nome: 'Mel', especie: 'Canina', raca: 'Golden Retriever', peso: 28.0, pesoAtual: 28.0, idade: '1 ano', sexo: 'F', fotoUrl: 'https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=400', temperamento: 'Agitado' },
@@ -67,6 +67,11 @@ export const MOCK_ESTOQUE: InventoryItem[] = [
 export const MOCK_TRANSACAOS: Transaction[] = [
     { id: 'tx-1', description: 'Venda de Balcão #102', amount: 150.00, type: 'INCOME', category: 'Vendas', date: new Date().toISOString(), status: 'PAID' },
     { id: 'tx-2', description: 'Conta de Energia', amount: 350.00, type: 'EXPENSE', category: 'Despesas Fixas', date: new Date().toISOString(), status: 'PENDING' },
+];
+
+export const MOCK_COMANDAS: Comanda[] = [
+  { id: 'com-1', numero: 19347, animalId: 'ani-1', tutorId: 'tut-1', status: 'FECHADA', dataAbertura: '2026-01-29T15:38:00', dataFechamento: '2026-01-29T16:24:00', total: 150.00 },
+  { id: 'com-2', numero: 19348, animalId: 'ani-2', tutorId: 'tut-2', status: 'ABERTA', dataAbertura: '2026-01-29T16:00:00', dataFechamento: null, total: 85.00 },
 ];
 
 export const MOCK_BEDS: Bed[] = [

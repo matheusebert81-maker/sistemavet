@@ -1,16 +1,11 @@
 
 import React, { useState } from 'react';
-import { MOCK_ANIMAIS, MOCK_TUTORES } from '../constants';
-
-// Mock de Comandas para visualização (Simulando estrutura da API)
-const MOCK_COMANDAS = [
-  { id: '19347', numero: 19347, animalId: MOCK_ANIMAIS[0].id, status: 'FECHADA', dataAbertura: '2026-01-29T15:38:00', dataFechamento: '2026-01-29T16:24:00', total: 150.00 },
-  { id: '19348', numero: 19348, animalId: MOCK_ANIMAIS[1].id, status: 'ABERTA', dataAbertura: '2026-01-29T16:00:00', dataFechamento: null, total: 85.00 },
-];
+import { useApp } from '../contexts/AppContext';
 
 const Comandas: React.FC = () => {
+  const { comandas, animals, tutors } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>('19347'); // Começa expandido como na imagem
+  const [expandedId, setExpandedId] = useState<string | null>('com-1'); // Default expanded
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -21,6 +16,21 @@ const Comandas: React.FC = () => {
       ? 'bg-slate-300 text-white font-bold' 
       : 'bg-emerald-500 text-white font-bold';
   };
+
+  // Basic search filter (can be improved)
+  const filteredComandas = comandas.filter(comanda => {
+    if (!searchTerm) return true;
+    const animal = animals.find(a => a.id === comanda.animalId);
+    const tutor = tutors.find(t => t.id === comanda.tutorId);
+    const lowerSearch = searchTerm.toLowerCase();
+
+    return (
+      comanda.numero.toString().includes(lowerSearch) ||
+      animal?.nome.toLowerCase().includes(lowerSearch) ||
+      tutor?.nome.toLowerCase().includes(lowerSearch) ||
+      tutor?.cpf.includes(lowerSearch)
+    );
+  });
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500 bg-slate-50 min-h-screen">
@@ -34,7 +44,7 @@ const Comandas: React.FC = () => {
         <div className="flex-1 relative">
            <input 
              type="text" 
-             placeholder="Buscar por Nome, CPF, E-mail ou ID" 
+             placeholder="Buscar por Nome, CPF, ou ID da Comanda" 
              className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 transition-all"
              value={searchTerm}
              onChange={e => setSearchTerm(e.target.value)}
@@ -48,9 +58,9 @@ const Comandas: React.FC = () => {
 
       {/* Lista de Comandas */}
       <div className="space-y-4">
-         {MOCK_COMANDAS.map(comanda => {
-            const animal = MOCK_ANIMAIS.find(a => a.id === comanda.animalId);
-            const tutor = MOCK_TUTORES.find(t => t.id === animal?.tutorId);
+         {filteredComandas.map(comanda => {
+            const animal = animals.find(a => a.id === comanda.animalId);
+            const tutor = tutors.find(t => t.id === comanda.tutorId);
 
             return (
               <div key={comanda.id} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -139,7 +149,7 @@ const Comandas: React.FC = () => {
                              
                              <div className="text-right">
                                 <p className="text-slate-400 text-xs font-bold uppercase">Valor:</p>
-                                <p className="text-emerald-600 font-black">R$ 0,00</p>
+                                <p className="text-emerald-600 font-black">R$ {comanda.total.toFixed(2)}</p>
                              </div>
                           </div>
                        </div>

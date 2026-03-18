@@ -170,6 +170,17 @@ export interface Transaction {
 // Alias
 export type Transacao = Transaction;
 
+export interface Comanda {
+  id: string;
+  numero: number;
+  animalId: string;
+  tutorId: string;
+  status: 'ABERTA' | 'FECHADA';
+  dataAbertura: string;
+  dataFechamento: string | null;
+  total: number;
+}
+
 export enum EstoqueCategoria {
   VACINA = 'VACINA',
   MEDICAMENTO = 'MEDICAMENTO',

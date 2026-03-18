@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
-import { MOCK_WORKFLOW, MOCK_ANIMAIS } from '../constants';
-import { WorkflowStage, WorkflowItem } from '../types';
+import React from 'react';
+import { useApp } from '../contexts/AppContext';
+import { WorkflowStage } from '../types';
 
 const STAGES = [
   { id: WorkflowStage.RECEPTION, label: 'Recepção', icon: 'fa-id-card' },
@@ -12,11 +12,7 @@ const STAGES = [
 ];
 
 const Esteira: React.FC = () => {
-  const [items, setItems] = useState<WorkflowItem[]>(MOCK_WORKFLOW);
-
-  const moveItem = (itemId: string, nextStage: WorkflowStage) => {
-    setItems(prev => prev.map(i => i.id === itemId ? { ...i, currentStage: nextStage } : i));
-  };
+  const { workflowItems: items, animals, updateWorkflowItemStage } = useApp();
 
   return (
     <div className="p-8 space-y-10 animate-in fade-in duration-500">
@@ -42,7 +38,7 @@ const Esteira: React.FC = () => {
 
              <div className="space-y-4">
                 {items.filter(i => i.currentStage === stage.id).map(item => {
-                  const animal = MOCK_ANIMAIS.find(a => a.id === item.animalId);
+                  const animal = animals.find(a => a.id === item.animalId);
                   return (
                     <div key={item.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition-all cursor-move group">
                        <div className="flex items-center space-x-4 mb-4">
@@ -63,7 +59,7 @@ const Esteira: React.FC = () => {
                              <button 
                                onClick={() => {
                                  const idx = STAGES.findIndex(s => s.id === stage.id);
-                                 if (idx < STAGES.length - 1) moveItem(item.id, STAGES[idx+1].id);
+                                 if (idx < STAGES.length - 1) updateWorkflowItemStage(item.id, STAGES[idx+1].id);
                                }}
                                className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"
                              >

@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Tenta pegar as variáveis de ambiente de forma segura.
@@ -10,7 +11,7 @@ const getEnv = () => {
   }
 };
 
-const env = getEnv();
+const env = getEnv() as any;
 const supabaseUrl = env.VITE_SUPABASE_URL;
 const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
 

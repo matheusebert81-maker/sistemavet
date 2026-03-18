@@ -4,7 +4,7 @@ import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'reac
 import { AppProvider, useApp } from './contexts/AppContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './views/Dashboard';
-import Prontuario from './views/Prontuario';
+import Workstation from './views/Workstation';
 import Agenda from './views/Agenda';
 import Vendas from './views/Vendas';
 import Comandas from './views/Comandas';
@@ -23,6 +23,7 @@ import LandingPage from './views/LandingPage';
 import CadastroPacientes from './views/CadastroPacientes';
 import CadastroItens from './views/CadastroItens';
 import AdminTenants from './views/AdminTenants';
+import Prontuario from './views/Prontuario';
 
 // Componente de Proteção de Rota
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -65,9 +66,9 @@ const AppRoutes: React.FC = () => {
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/esteira" element={<ProtectedRoute><Esteira /></ProtectedRoute>} />
       <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
-      <Route path="/prontuario" element={<ProtectedRoute><Prontuario /></ProtectedRoute>} />
+      <Route path="/workstation" element={<ProtectedRoute><Workstation /></ProtectedRoute>} />
       <Route path="/comandas" element={<ProtectedRoute><Comandas /></ProtectedRoute>} />
-      <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
+      <Route path="/produtos" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
       <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
       <Route path="/vendas" element={<ProtectedRoute><Vendas /></ProtectedRoute>} />
       <Route path="/vacinas" element={<ProtectedRoute><Vacinas /></ProtectedRoute>} />
@@ -78,6 +79,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/cadastro-pacientes" element={<ProtectedRoute><CadastroPacientes /></ProtectedRoute>} />
       <Route path="/cadastro-itens" element={<ProtectedRoute><CadastroItens /></ProtectedRoute>} />
       <Route path="/admin/tenants" element={<ProtectedRoute><AdminTenants /></ProtectedRoute>} />
+      <Route path="/prontuario/:animalId" element={<ProtectedRoute><Prontuario /></ProtectedRoute>} />
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

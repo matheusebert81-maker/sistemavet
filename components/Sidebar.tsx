@@ -22,7 +22,7 @@ const MENU_STRUCTURE: MenuItem[] = [
       { to: '/agenda', icon: 'fa-calendar-alt', label: 'Agenda' },
       { to: '/comandas', icon: 'fa-file-invoice', label: 'Comandas' },
       { to: '/esteira', icon: 'fa-arrows-left-right-to-line', label: 'Esteira' },
-      { to: '/prontuario', icon: 'fa-file-medical', label: 'Prontuário' },
+      { to: '/workstation', icon: 'fa-laptop-medical', label: 'Workstation' },
       { to: '/vacinas', icon: 'fa-syringe', label: 'Vacinas' },
     ]
   },
@@ -40,7 +40,7 @@ const MENU_STRUCTURE: MenuItem[] = [
     children: [
       { to: '/cadastro-pacientes', icon: 'fa-paw', label: 'Clientes e Animais' },
       { to: '/cadastro-itens', icon: 'fa-tags', label: 'Produtos e Serviços' },
-      { to: '/estoque', icon: 'fa-boxes-stacked', label: 'Estoque' },
+      { to: '/produtos', icon: 'fa-boxes-stacked', label: 'Produtos' },
     ]
   },
   {

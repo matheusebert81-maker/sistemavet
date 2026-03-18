@@ -1,131 +1,43 @@
-
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#4f46e5">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Pet InfoCare - Gestão Veterinária Moderna</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Fonte Moderna e Limpa -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --glass-border: 1px solid rgba(255, 255, 255, 0.3);
-            --glass-bg: rgba(255, 255, 255, 0.75);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-        }
-
-        body { 
-          font-family: 'Inter', sans-serif; 
-          background-color: #f3f4f6;
-          color: #1e293b;
-          -webkit-tap-highlight-color: transparent;
-          overflow-x: hidden;
-          background: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-                      radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-                      radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-          background-attachment: fixed;
-          background-size: cover;
-          min-height: 100vh;
-        }
-
-        /* Mesh Gradient Animation Background */
-        .animated-bg {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          z-index: -1;
-          background: 
-            radial-gradient(at 18% 93%, hsla(212, 69%, 95%, 1) 0px, transparent 50%),
-            radial-gradient(at 93% 28%, hsla(250, 47%, 94%, 1) 0px, transparent 50%),
-            radial-gradient(at 9% 19%, hsla(190, 71%, 95%, 1) 0px, transparent 50%),
-            radial-gradient(at 84% 87%, hsla(290, 56%, 95%, 1) 0px, transparent 50%);
-        }
-
-        /* Glassmorphism Classes */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: var(--glass-border);
-            box-shadow: var(--glass-shadow);
-        }
-        
-        .glass-card {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .glass-card:hover {
-            background: rgba(255, 255, 255, 0.95);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
-            border-color: rgba(99, 102, 241, 0.3);
-        }
-
-        /* Scrollbars Modernas */
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.6); }
-
-        /* Animações de Entrada de Página */
-        .page-enter {
-            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes slideUpFade {
-            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        
-        .animate-float {
-            animation: float 6s ease-in-out infinite;
-        }
-
-        /* Utilitários de Texto */
-        .text-gradient {
-            background: linear-gradient(135deg, #4f46e5 0%, #ec4899 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-    </style>
-<script type="importmap">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Base44 APP</title>
+  <script type="importmap">
 {
   "imports": {
+    "clsx": "https://esm.sh/clsx@^2.1.1",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@^3.4.0",
+    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@^5.90.20",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "date-fns": "https://esm.sh/date-fns@^4.1.0",
+    "date-fns/": "https://esm.sh/date-fns@^4.1.0/",
+    "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.93.3",
-    "dexie": "https://esm.sh/dexie@^4.2.1"
+    "dexie": "https://esm.sh/dexie@^4.3.0",
+    "globals": "https://esm.sh/globals@^17.2.0",
+    "@eslint/js": "https://esm.sh/@eslint/js@^9.39.2",
+    "eslint-plugin-react-hooks": "https://esm.sh/eslint-plugin-react-hooks@^7.0.1",
+    "eslint-plugin-unused-imports": "https://esm.sh/eslint-plugin-unused-imports@^4.3.0",
+    "@base44/vite-plugin": "https://esm.sh/@base44/vite-plugin@^0.2.16",
+    "eslint-plugin-react": "https://esm.sh/eslint-plugin-react@^7.37.5",
+    "@hello-pangea/dnd": "https://esm.sh/@hello-pangea/dnd@^18.0.1",
+    "recharts": "https://esm.sh/recharts@^3.7.0"
   }
 }
 </script>
 </head>
-<body class="antialiased selection:bg-indigo-500 selection:text-white">
-    <div class="animated-bg"></div>
+  <body>
     <div id="root"></div>
-</body>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

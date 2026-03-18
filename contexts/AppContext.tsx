@@ -2,9 +2,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   Animal, Appointment, Tutor, Transaction, SOAPRecord, InventoryItem, 
-  Tenant, PlanoType, User, UserRole, AppointStatus, VacinaRecord
+  Tenant, PlanoType, User, UserRole, AppointStatus, VacinaRecord, Comanda,
+  WorkflowItem, WorkflowStage
 } from '../types';
-import { MOCK_ANIMAIS, MOCK_TUTORES, MOCK_AGENDA, MOCK_TRANSACAOS, MOCK_ESTOQUE, MOCK_USER, MOCK_VACINAS } from '../constants';
+import { MOCK_ANIMAIS, MOCK_TUTORES, MOCK_AGENDA, MOCK_TRANSACAOS, MOCK_ESTOQUE, MOCK_USER, MOCK_VACINAS, MOCK_COMANDAS, MOCK_WORKFLOW } from '../constants';
 import { db, saveToLocal } from '../services/db';
 import { syncService } from '../services/syncService';
 import { checkConnection } from '../services/supabase';
@@ -20,12 +21,14 @@ interface AppState {
   medicalRecords: SOAPRecord[];
   inventory: InventoryItem[];
   vacinas: VacinaRecord[];
+  comandas: Comanda[];
+  workflowItems: WorkflowItem[];
   lastSaved: Date | null;
   isOnline: boolean;
 }
 
 interface AppContextType extends AppState {
-  login: (email: string, pass: string) => boolean;
+  login: (email: string, pass: string, matricula?: string) => boolean;
   logout: () => void;
   addAppointment: (apt: Omit<Appointment, 'id'>) => void;
   updateAppointmentStatus: (id: string, status: AppointStatus) => void;
@@ -33,6 +36,7 @@ interface AppContextType extends AppState {
   addTransaction: (tx: Omit<Transaction, 'id'>) => void;
   addVacina: (vac: Omit<VacinaRecord, 'id'>) => Promise<void>;
   updateVacina: (vac: VacinaRecord) => Promise<void>;
+  updateWorkflowItemStage: (id: string, stage: WorkflowStage) => void;
   isFeatureLocked: (feature: 'ANALYTICS' | 'MULTI_USER') => boolean;
   forceSave: () => void;
 }
@@ -57,11 +61,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [medicalRecords, setMedicalRecords] = useState<SOAPRecord[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [vacinas, setVacinas] = useState<VacinaRecord[]>([]);
+  const [comandas, setComandas] = useState<Comanda[]>([]);
+  const [workflowItems, setWorkflowItems] = useState<WorkflowItem[]>([]);
   
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
+    let stopSync: (() => void) | undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
     const init = async () => {
       const count = await db.animals.count();
       if (count === 0) {
@@ -71,21 +81,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await db.inventory.bulkAdd(MOCK_ESTOQUE.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
         await db.transactions.bulkAdd(MOCK_TRANSACAOS.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
         await db.vacinas.bulkAdd(MOCK_VACINAS.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
+        await db.comandas.bulkAdd(MOCK_COMANDAS.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
+        await db.workflowItems.bulkAdd(MOCK_WORKFLOW.map(i => ({...i, syncStatus: 'created', lastModified: Date.now()})));
       }
       refreshStateFromDb();
       
       const hasSupabase = await checkConnection();
       if (hasSupabase) {
         setIsOnline(true);
-        const stopSync = syncService.startAutoSync(tenant.id);
-        return stopSync;
+        stopSync = syncService.startAutoSync(tenant.id);
       }
     };
+    
     init();
 
-    window.addEventListener('online', () => setIsOnline(true));
-    window.addEventListener('offline', () => setIsOnline(false));
-  }, []);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Retorna a função de limpeza
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      if (stopSync) {
+        stopSync();
+      }
+    };
+  }, [tenant.id]);
 
   const refreshStateFromDb = async () => {
     setTutors(await db.tutors.toArray());
@@ -95,9 +116,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMedicalRecords(await db.medicalRecords.toArray());
     setInventory(await db.inventory.toArray());
     setVacinas(await db.vacinas.toArray());
+    setComandas(await db.comandas.toArray());
+    setWorkflowItems(await db.workflowItems.toArray());
   };
 
-  const login = (email: string, pass: string) => {
+  const login = (email: string, pass: string, matricula?: string) => {
+    // Acesso Administrativo via Matrícula 01 (Solicitado)
+    if (matricula === '01') {
+      const adminUser: User = {
+        id: 'admin-01',
+        name: 'ADMIN',
+        nome: 'ADMIN',
+        email: email || 'admin@sistema.com',
+        role: UserRole.ADMIN,
+        unidadeId: 'u-1'
+      };
+      setCurrentUser(adminUser);
+      localStorage.setItem('petinfocare_user', JSON.stringify(adminUser));
+      return true;
+    }
+
     if (email && pass) {
       const user = { ...MOCK_USER, email };
       setCurrentUser(user);
@@ -121,7 +159,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateAppointmentStatus = async (id: string, status: AppointStatus) => {
-    const apt = appointments.find(a => a.id === id);
+    const apt = await db.appointments.get(id);
     if (apt) {
       const updated = { ...apt, status };
       await saveToLocal(db.appointments, updated, 'updated');
@@ -164,8 +202,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveToLocal(db.vacinas, vac, 'updated');
     refreshStateFromDb();
   };
+  
+  const updateWorkflowItemStage = async (id: string, stage: WorkflowStage) => {
+    const item = await db.workflowItems.get(id);
+    if (item) {
+      const updated = { ...item, currentStage: stage };
+      await saveToLocal(db.workflowItems, updated, 'updated');
+      refreshStateFromDb();
+    }
+  };
 
   const isFeatureLocked = (feature: 'ANALYTICS' | 'MULTI_USER') => {
+    // Se for ADMIN, libera tudo
+    if (currentUser?.role === UserRole.ADMIN) return false;
+
     if (tenant.plano === PlanoType.ENTERPRISE) return false;
     if (tenant.plano === PlanoType.PRO && feature === 'ANALYTICS') return false;
     return true; 
@@ -173,8 +223,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      tenant, currentUser, tutors, animals, appointments, transactions, medicalRecords, inventory, vacinas, lastSaved, isOnline,
-      login, logout, addAppointment, updateAppointmentStatus, saveMedicalRecord, addTransaction, addVacina, updateVacina, isFeatureLocked, 
+      tenant, currentUser, tutors, animals, appointments, transactions, medicalRecords, inventory, vacinas, comandas, workflowItems, lastSaved, isOnline,
+      login, logout, addAppointment, updateAppointmentStatus, saveMedicalRecord, addTransaction, addVacina, updateVacina, updateWorkflowItemStage, isFeatureLocked, 
       forceSave: () => syncService.pushChanges()
     }}>
       {children}
